@@ -1,0 +1,327 @@
+---
+title: "Training Intervention Analysis"
+author: "your name, id=your student id"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  word_document: default
+  html_document: default
+---
+ **Before you start: if you are a Mac user, you will need to install Xquartz from https://www.xquartz.org so you can use the 'tolerance' package.**  You can delete this line from your final report.  
+
+```{r include=FALSE}
+library(infer)
+library(tidyverse)
+library(tolerance)
+```
+
+## Context: Celtic Study
+
+A sample of 18 full-time youth soccer players from a Youth Academy performed high intensity aerobic interval training over a 10-week in-season period in addition to usual regime of soccer training and matches. 
+
+**The aim** of this study to find if this extra training improves V_IFT, the maximum velocity (km/hr) achieved in an intermittent fitness test (`VIFT_Pre` vs `VIFT_Post`)?
+
+This is a **paired design:** each player's V_IFT measured before and after the training intervention (i.e. start and after 10 weeks)
+
+A scaffold for the analysis with the response variable VO2 max is provided below. You need to rerun the analysis using the V_IFT variables (i.e. `VIFT_Pre` vs `VIFT_Post`) to answer the question of interest: is there, on average, an improvement in V_IFT?   To assess the evidence, you will provide confidence intervals, and other statistical inference,  for the mean improvement of players in the population (eg of future youth soccer players under the same training intervention).
+
+
+To answer the question of interest, provide a detailed response for all of the tasks asked below using the V_IFT variables (i.e. `VIFT_Pre` vs `VIFT_Post`).
+
+
+Task: State the appropriate null and alternative hypotheses for the V_IFT study.
+
+Ans:
+
+Null Hypotheses- It is the default hypotheses which is denoted by H and a subscripted zero. It accepts a value for the parameter and checks if its true so as to decide whether to accept or reject the alternative hypothesis.
+
+Alternative Hypotheses: It is denoted by H with a subscripted a and is also called research hypotheses. It is a statement that contradicts the null hypothesis. It acceptas whether to accept or reject the statement based on null hypothesis.
+
+
+Task: Define a Type I and Type II error and discuss the implication of making these
+errors in this study.
+
+Ans:
+
+Type I error: It is a false positive conclusion. This error occurs if a true null hypothesis is rejected.
+
+Type II error: It is a false negative conclusion. This error occurs if a false null hypothesis is accepted 
+
+
+
+## Read in the training intervention data
+
+Read in the data and have a look at the variable names and structure of the data.
+
+```{r}
+train.df <- read.csv("Training_intervention_data.csv")
+glimpse(train.df)
+```
+
+## Focus on the V_IFT response variables
+
+## Summary Statistics
+
+```{r}
+train.df %>% select(VO2.max_Pre,VO2.max_Post) %>% summary()
+```
+Task: Interpret!
+```{r}
+train.df %>% select(VIFT_Pre,VIFT_Post) %>% summary()
+
+```
+Ans:
+
+From the two statistical summary we can see that there is a clear shift in the central distribution of Pre and Post VIFT. The minimum value of VIFT_Pre and VIFT_Post doesn't have much difference with values 21.40 and 22.60 respectively. Likewise, 1st Quantile, Median and 3rd Quantile of both variables has increased by almost 2 units. Max has seen the most significant increase ranging from 31.50 for VIFT_Pre to 34.60 for VIFT_Post.
+
+## Mean and Standard Deviation
+
+```{r}
+train.df %>% select(VO2.max_Pre,VO2.max_Post) %>%
+            summarize(Pre_Mean=mean(VO2.max_Pre), Pre_SD= sd(VO2.max_Pre),
+                      Post_Mean=mean(VO2.max_Post), Post_SD= sd(VO2.max_Post))
+```
+
+
+```{r}
+train.df %>% select(VIFT_Pre,VIFT_Post) %>%
+            summarize(Pre_Mean=mean(VIFT_Pre), Pre_SD= sd(VIFT_Pre),
+                      Post_Mean=mean(VIFT_Post), Post_SD= sd(VIFT_Post))
+```
+
+Task: Interpret!
+
+The mean and the standard deviation is improved from pre to the post results. Significant improvement is seen in the maximum velocity acheieved by post training. Initially it was around 26.01 but after training it increased upto 28.07. The SD shows the variance of the data. Smaller data means close to mean while bigger data is far spreaded out.
+
+## Scatterplot of Pre and Post with line of equality
+
+```{r}
+train.df %>% ggplot(aes(x = VO2.max_Pre, y = VO2.max_Post)) +
+        geom_point() + 
+  ggtitle("Scatterplot of Pre and Post VO2 Max") +
+  ylab("Post VO2 Max (ml/kg min)") +
+  xlab("Pre VO2 Max (ml/kg min)") +
+  geom_abline(slope=1, intercept=0)
+```
+
+
+```{r}
+train.df %>% ggplot(aes(x = VIFT_Pre, y = VIFT_Post)) +
+        geom_point() + 
+  ggtitle("Scatterplot of Pre and Post VIFT") +
+  ylab("Post VIFT (ml/kg min)") +
+  xlab("Pre VIFT (ml/kg min)") +
+  geom_abline(slope=1, intercept=0)
+```
+
+Task: Interpret!
+
+Ans:
+
+In the given scatter plot each player VIFT is measured as ml/kg min before and after the study of 10 weeks. The x-axis shows the Pre VIFT and the y-axis shows the Post VIFT. 2 players have actually performed worse in VIFT even after extra training. Comparing the mean of all values i.e the reference line, we can see an improvement in the majority of the athletes. Although 2 players are below reference line. So, we can say that majority of the players have imporvements but unlike VO2 not all improved.
+
+
+## Calculate the Improvement in V_IFT
+
+Calculate a new variable, "improvement", and have a look at the data frame to see that it has been created.  High values of VO2 max are good so Post-Pre is a better measure than Pre-Post to capture this - what about V_IFT?
+
+```{r}
+
+train.df <- train.df %>% mutate(Improvement = VO2.max_Post-VO2.max_Pre) %>%
+              glimpse()
+```
+
+
+```{r}
+train.df <- train.df %>% mutate(Improvement = VIFT_Post-VIFT_Pre) %>%
+              glimpse()
+```
+
+
+## Mean and Standard Deviation of Improvement in V_IFT
+
+```{r}
+
+train.df %>% select(Improvement) %>%
+            summarize(Imp_Mean=mean(Improvement), Imp_SD= sd(Improvement))
+
+```
+
+```{r}
+train.df %>% select(Improvement) %>%
+            summarize(Imp_Mean=mean(Improvement), Imp_SD= sd(Improvement))
+```
+
+Task: Interpret!
+
+The mean improvement denoted the average improvement score of all the players in terms of positive and negative improvement. Average player improves his VIFT by 2.06 by pursuing extra training. Although the sd is quite high (almost close to the mean), that shows the data is more spread out.
+
+
+## Boxplot of Improvement in V_IFT
+
+```{r}
+
+
+train.df %>% ggplot(aes(x = "", y = Improvement)) +
+        geom_boxplot() + 
+  ggtitle("Boxplot of Improvement in VO2 Max") +
+  ylab("Improvement in VO2 Max (ml/kg min)") +
+  xlab("") +
+  coord_flip()
+
+```
+
+```{r}
+train.df %>% ggplot(aes(x = "", y = Improvement)) +
+        geom_boxplot() + 
+  ggtitle("Boxplot of Improvement in VIFT") +
+  ylab("Improvement in VIFT (ml/kg min)") +
+  xlab("") +
+  coord_flip()
+```
+
+Task: Interpret!
+
+The boxplot is positively skewed because the median is towards the lower end of the boxplot. There exist no outliers in the boxplot.
+
+
+## 95% Confidence Interval Using the t.test function
+
+```{r}
+
+train.df %>% select(Improvement) %>% t.test()
+
+```
+
+Task: Based on the output given answer the following questions:
+
+* What is the mean improvement in V_IFT the population of interest? Interpret the relevant 95% Confidence Interval carefully?
+
+Ans:
+
+Mean improvement in VIFT is 2.06. 95% confidence interval means it is 95% sure that the mean is between the confidence interval provided.
+
+* Use the relevant interval estimate and p-value to decide whether there is sufficient evidence in the sample provided to claim that there is any improvement on average in V_IFT in the population of interest.
+
+Ans:
+
+A p-value less than 0.05 is typically considered to be statistically insignificant, in which case the null hypothesis should be rejected. Here the p-value is 0.0001736. If the study has no improvement in the population as a whole, 0.017% of studies will obtain the effect observed in your sample, or larger, because of random sample error.
+
+
+* What are the assumptions underlying the one sample t-test presented?
+
+Ans:
+
+The one sample t-test compares the mean of a single sample to a predetermined value which determines if the sample mean is greater or lesser than that value. Our dependent variable should be normally distributed approximately. We consider only one-sample t-test requiring appropriately normal data because it is robust to normality violations. That means the assumption can be a little violated and still provide valid results. Also the relationship between the observations are independent of each other.
+
+The assumption underlying the one sample t-test are:
+Independence, normality, random sampling, Homogenity of variance
+
+* Explain why or why not the assumptions seem justified based on the output provided.
+
+Ans:
+
+The assumptions seem to be justified. The entire study did not show improvement to all the players since few existed below the pre-values. The df is 17 i.e one less than the number of sample which is 18. We can say that the Null hypotheses can be rejected because the true mean comes under 95% confidence interval which means the mean of VIFT_Pre and VIFT_Post are same.
+
+
+## 95% Bootstrap CI for the mean
+
+```{r}
+
+boot <- train.df %>%
+  specify(response = Improvement) %>%
+  generate(reps = 1000, type = "bootstrap") %>%
+  calculate(stat = "mean")
+
+percentile_ci <- get_ci(boot)
+round(percentile_ci,2)
+
+```
+
+```{r}
+boot <- train.df %>%
+  specify(response = Improvement) %>%
+  generate(reps = 1000, type = "bootstrap") %>%
+  calculate(stat = "mean")
+
+percentile_ci <- get_ci(boot)
+round(percentile_ci,2)
+```
+
+Task: Interpret!
+
+Bootstrap creates multiple resamples from a single set of observations, and computes the effective size of interest on each of these resamples. The bootstrap resamples of the effective size can then be used to determine the 95% CI. Here, the bootstrap interval is 1.24 to 2.91(lower to upper CI). 
+
+
+
+
+```{r}
+boot %>% visualize()+
+  shade_confidence_interval(endpoints = percentile_ci) +
+                   xlab("Bootstrap Mean") + ylab("Frequency")
+```
+
+Task: Interpret!
+
+We can see that bootstrap mean is normally distributed. The shaded area shows the confidence interval of 95% for the data simulated.
+
+## 95% Bootstrap CI for the median improvement
+
+```{r}
+
+boot.median <- train.df %>%
+  specify(response = Improvement) %>%
+  generate(reps = 1000, type = "bootstrap") %>%
+  calculate(stat = "median")
+
+percentile_ci_median <- get_ci(boot.median)
+round(percentile_ci_median,2)
+
+```
+
+Task: Interpret!
+
+These limits are somewhat wider and they are slightly asymetric around the sample median. In the data frame boot.median, we are generating 1000 samples using generate() method and then using calculate, we calculate a distribution of statistics in case median. The number of different values of the medians in bootstrapped samples were spread. This is because the median must be either one of the obtained values or the average of two of them. get_ci() method gives the confidence interval values with confidence level at 95% by default which lies between 0.8 and 3.1.
+
+
+```{r}
+boot.median %>% visualize()+
+  shade_confidence_interval(endpoints = percentile_ci_median) +
+                   xlab("Bootstrap Median") + ylab("Frequency")
+```
+
+Task: Interpret!
+
+
+The shaded region shows the confidence interval of 95% of data for the data simulated using bootstrap method for median
+
+
+## 95% Tolerance Interval (Bonus Question)
+
+Calculate a 95% tolerance interval covering 95% of V_IFT improvement values 
+
+```{r}
+
+normtol.int(train.df$Improvement, alpha = 0.05, P = 0.95)
+
+```
+
+Task: Interpret!
+
+Tolerance intervals are similar to prediction interval. They cover a fix proportion of the population where we expect a certain population proportion to lie. The tolerance level is one-sided where the lower limit is negative.
+We can see the tolerance percentage is 95. This means that 95% of the population will have the true mean within the 95% confidence interval. It provides 1-sided tolerance interval for improvement in VIFT with 0.05 confidence level and 0.95 p-value.
+
+
+## Overall Conclusion 
+Task: state your overall conclusion. 
+
+
+```{r}
+t.test(train.df$VIFT_Pre, train.df$VIFT_Post)
+
+```
+ 
+
+Here, Null hypotheses here seems to have no difference between the mean values during pre and post training but the output of T-test shows that the alternate hypotheses is true i.e the true difference in mean is not equal to zero.
+Hence the null hypotheses is rejected and improvement in post training is proved. It is clear that the VIFT did improve the overall performance of most of the players, but it wasn't as successful as VO2max study. Here, there were few cases where the post VIFT results weren't as successful as the pre VIFT.
+
+
